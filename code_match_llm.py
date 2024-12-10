@@ -9,11 +9,11 @@ import time
 
 dotenv.load_dotenv('.env', override=True)
 
-OPENAI_API_KEY =  os.getenv('OPENAI_API_KEY')
+
 supabase_url = os.getenv('SUPABASE_URL')
 supabase_key = os.getenv('SUPABASE_KEY')
 supabase_client = create_client(supabase_url, supabase_key)
-openai.api_key = OPENAI_API_KEY
+#openai.api_key = OPENAI_API_KEY
 
 class llm_match():
     def __init__(self, prompt_template=None):

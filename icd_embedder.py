@@ -4,7 +4,8 @@ import os
 import dotenv
 
 # Set these environment variables or just hardcode them here
-v('.env', override=True)
+
+dotenv.load_dotenv('.env', override=True)
 
 OPENAI_API_KEY =  os.getenv('OPENAI_API_KEY')
 supabase_url = os.getenv('SUPABASE_URL')
