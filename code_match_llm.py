@@ -6,6 +6,7 @@ import os
 import csv
 import time
 
+
 dotenv.load_dotenv('.env', override=True)
 
 OPENAI_API_KEY =  os.getenv('OPENAI_API_KEY')
@@ -45,9 +46,10 @@ class llm_match():
             return None
 
     def data_table_creator(self, response):
+
         if response:
             lines = response.strip().split("\n")
-        
+
         #print('lines',lines)
         data = []
 
