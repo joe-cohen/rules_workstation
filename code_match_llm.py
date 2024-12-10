@@ -8,7 +8,7 @@ import time
 
 dotenv.load_dotenv('.env', override=True)
 
-OPENAI_API_KEY =  os.getenv('OPENAI_API_KEY')#"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" #os.getenv("OPENAI_API_KEY")
+OPENAI_API_KEY =  os.getenv('OPENAI_API_KEY')
 supabase_url = os.getenv('SUPABASE_URL')
 supabase_key = os.getenv('SUPABASE_KEY')
 supabase_client = create_client(supabase_url, supabase_key)
