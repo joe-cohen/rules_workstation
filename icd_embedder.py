@@ -4,14 +4,16 @@ import os
 import dotenv
 
 # Set these environment variables or just hardcode them here
-SUPABASE_URL = "https://xrqpkhsogxlzwtzoptej.supabase.co"
-SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhycXBraHNvZ3hsend0em9wdGVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzM3NjY4ODgsImV4cCI6MjA0OTM0Mjg4OH0.nN4_fUU85afWXzc-XZ1JWgtyM2BKS3FlsYReiW3QJxc"
-OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+dotenv.load_dotenv('.env', override=True)
+
+OPENAI_API_KEY =  os.getenv('OPENAI_API_KEY')#"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" #os.getenv("OPENAI_API_KEY")
+supabase_url = os.getenv('SUPABASE_URL')
+supabase_key = os.getenv('SUPABASE_KEY')
 
 openai.api_key = OPENAI_API_KEY
 
 # Initialize Supabase client
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
+supabase: Client = create_client(supabase_url, supabase_key)
 
 # The table and column names
 TABLE_NAME = "icd_codes"
