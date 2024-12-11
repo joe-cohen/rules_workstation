@@ -72,7 +72,7 @@ class llm_match():
         Generates embeddings for the given text using OpenAI's embedding model.
         """
         try:
-            response = openai.embeddings.create(
+            response = openai.embeddings.create( 
                 input=text,
                 model="text-embedding-ada-002"  # Correct model for embeddings
             )
@@ -105,10 +105,24 @@ class llm_match():
 
     def match_over_table(self, df):
      
-        df[['match_value','sim_score']] = df['embeddings'].apply(
+        df[['match_value', 'new_code','sim_score']] = df['embeddings'].apply(
             lambda x: pd.Series(self.similarity_search(x)[0])
         )
+        df['sim_score'] = 1 - df['sim_score']
         return df
+    
+    def results_filter(self,match_response):
+        match_threshold = .93
+        filtered_df = match_response.loc[match_response.groupby("new_code")["sim_score"].idxmax()]
+        thresh_filtered_df = filtered_df[filtered_df['sim_score'] > match_threshold]
+        return thresh_filtered_df
+    
+
+    def column_picker(self,full_filt_db):
+        full_filt_db['return_col'] = full_filt_db['match_value'] + "-" + full_filt_db['new_code']
+        retDB = full_filt_db['return_col']
+        #df_no_headers_index = retDB.to_string(header=False, index=False)
+        return retDB
 
 
 
@@ -116,26 +130,38 @@ class llm_match():
 
 
         # Instantiate the ruleCreator with a prompt template that can be changed
-        prompt_template = '''You are a highly sophisticated medical coder .Given the following input: '{input_text}',create a comprehenseive list of ICD codes that reprsent the inpu and their relevant description.
+        prompt_template = '''You are a highly sophisticated medical coder. You are going to be given a symptom, a description of a symptom or medical term: '{input_text}', 
+        if it is not a symptom or a description of a symptom or a medical term return 'none'. If it is
+        create a comprehenseive list of ICD codes that reprsent the input and their relevant description.
         There should be no headers, and the response should be in the structure: 
         
         B21 | HIV disease resulting in opportunistic infection. 
         
         There should not be any other markings before or after the dataset and all should have the same form
+        
+        If there are not any matches do not return any or if the characters do not resemeble a good match return none.
         '''
 
         rc = llm_match(prompt_template=prompt_template)
         response1 = rc.query_openai(input_text)
-        #print('llm call completed', response1)
-        table_response = rc.data_table_creator(response1)
-        embedded_table = rc.process_table(table_response=table_response)
-        match = rc.match_over_table(df = embedded_table)
-        return match
+        print(response1)
+        if response1 != 'none':
+            table_response = rc.data_table_creator(response1)
+            print(table_response)
+            embedded_table = rc.process_table(table_response=table_response)
+            print(embedded_table)
+            match = rc.match_over_table(df = embedded_table)
+            fin = rc.column_picker(rc.results_filter(match))
+
+            return fin
+        else:
+            return 'No match'
 
 
         
 if __name__ == "__main__":
     input_text = input('enter:')
     match_inst = llm_match()
-    fin = match_inst.main(input_text)
+    match_response = match_inst.main(input_text)
+    fin = match_inst.results_filter(match_response)
     print(fin)

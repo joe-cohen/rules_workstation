@@ -15,14 +15,15 @@ st.title("cohere code match")
 user_input = st.text_input("Enter your text:")
 
 # When user clicks this button, we run the process_input function
-if st.button("Run Function"):
+
+if st.button("Run Function") and len(user_input)>=1:
     result = process_input(user_input)
     st.session_state["result"] = result
 
 # Display the output if available
 if "result" in st.session_state:
     st.write("Output:")
-    st.code(st.session_state["result"], language='text')
+    st.table(st.session_state["result"])
     
     # Button to copy the output to clipboard (using Streamlit's experimental feature)
     # Note: As of Streamlit 1.19, st.write can be used with `st.text_area` to copy easily.
