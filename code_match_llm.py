@@ -159,7 +159,7 @@ class llm_match():
         
         There should not be any other markings before or after the dataset and all should have the same form
         
-        If there are not any matches do not return any or if the characters do not resemeble a good match return none.
+        If there are not any matches do not return any or if the characters do not resemeble a good match return 'none'.
         '''
 
         rc = llm_match(prompt_template=prompt_template)
