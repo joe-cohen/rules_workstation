@@ -152,7 +152,8 @@ class llm_match():
     def main(self, input_text):
         # Instantiate the ruleCreator with a prompt template that can be changed
         prompt_template = '''You are a highly sophisticated medical professional.
-        Give me the ICD codes that if found in a medical authorization note would indicate the following : '{input_text}'
+        Return the ICD codes that would represent the following : '{input_text}'
+        It should be focused on the input text and not take into account things out of the scope of the input text.
         There should be no headers, and the response should be in the structure: 
         
         B21 | HIV disease resulting in opportunistic infection. 
