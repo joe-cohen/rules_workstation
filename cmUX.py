@@ -1,8 +1,8 @@
 import streamlit as st
 from code_match_llm import llm_match 
-import pyperclip
 import pandas as pd
 import re
+
 # Define your function that processes the input
 def process_input(user_input: str) -> str:
     match_inst = llm_match()
@@ -15,11 +15,11 @@ def process_input(user_input: str) -> str:
 st.title("cohere ICD code match")
 
 # Text input for user
-user_input = st.text_input("Enter your text:")
+user_input = st.text_input("Enter the description to match:")
 
 # When user clicks this button, we run the process_input function
 
-if st.button("Run Function") and len(user_input)>=1:
+if st.button("Run Code Match") and len(user_input)>=1:
     result = process_input(user_input)
     st.session_state["result"] = result
 
