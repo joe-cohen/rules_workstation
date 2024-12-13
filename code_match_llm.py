@@ -30,7 +30,7 @@ class llm_match():
             
             # Call OpenAI's completion API
             response = openai.chat.completions.create(
-                model="gpt-4o",  # Use "gpt-4" or "gpt-3.5-turbo"
+                model="gpt-4-turbo",  # Use "gpt-4" or "gpt-3.5-turbo"
                 messages=[
                     {"role": "system", "content": "You are a helpful medical professional creating the most applicable phrases to help find the given indications as frequently as possible."},
                     {"role": "user", "content": prompt}
@@ -166,8 +166,8 @@ class llm_match():
 
         rc = llm_match(prompt_template=prompt_template)
         response1 = rc.query_openai(input_text)
-        #print(response1)
-        if response1 != 'none':
+        print(response1)
+        if response1 != 'None' and response1 != 'none' :
             table_response = rc.data_table_creator(response1)
             #print(table_response)
             embedded_table = rc.process_table(table_response=table_response)
