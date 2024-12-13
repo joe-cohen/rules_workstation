@@ -30,7 +30,7 @@ class llm_match():
             
             # Call OpenAI's completion API
             response = openai.chat.completions.create(
-                model="gpt-4o-mini",  # Use "gpt-4" or "gpt-3.5-turbo"
+                model="gpt-4o",  # Use "gpt-4" or "gpt-3.5-turbo"
                 messages=[
                     {"role": "system", "content": "You are a helpful medical professional creating the most applicable phrases to help find the given indications as frequently as possible."},
                     {"role": "user", "content": prompt}
@@ -93,33 +93,56 @@ class llm_match():
         )
         return table_response
     
-    def similarity_search(self, query_embedding):
-        response = self.supabase_client.rpc("find_most_similar", {
-        "input_vector": query_embedding
-            }).execute()
+    # def similarity_search(self, query_embedding):
+    #     response = self.supabase_client.rpc("find_most_similar", {
+    #     "input_vector": query_embedding
+    #         }).execute()
 
-            # Process and return results
-        results = response.data
-        #return [{"match": result[match_column], "score": result["similarity"]} for result in results]
-        return results
+    #         # Process and return results
+    #     results = response.data
+    #     #return [{"match": result[match_column], "score": result["similarity"]} for result in results]
+    #     return results
 
-    def match_over_table(self, df):
+    # def match_over_table(self, df):
      
-        df[['match_value', 'new_code','sim_score']] = df['embeddings'].apply(
-            lambda x: pd.Series(self.similarity_search(x)[0])
-        )
-        df['sim_score'] = 1 - df['sim_score']
+    #     df[['match_value', 'new_code','sim_score']] = df['embeddings'].apply(
+    #         lambda x: pd.Series(self.similarity_search(x)[0])
+    #     )
+    #     df['sim_score'] = 1 - df['sim_score']
         return df
+
+    #need func that takes in embedded table and returns similarity search
+
+    def match_over_table_bulk(self,embedded_table):
+        embedded_table['formatted_embeddings'] = embedded_table['embeddings'].apply(
+        lambda e: "[" + ", ".join(f"{x}" for x in e) + "]"
+    )
+    
+        embeddings_list = embedded_table['formatted_embeddings'].tolist()
+        response = self.supabase_client.rpc("find_most_similar_bulk", {
+                        "input_vectors": embeddings_list
+                    }).execute()
+        results_df = pd.DataFrame(response.data)
+        # 'results_df' now has one result per original embedding.
+        # 'idx' corresponds to the embedding index in embeddings_list.
+        results_df.sort_values('idx', inplace=True)
+
+        # Merge the results back into your main DataFrame
+        embedded_table = embedded_table.reset_index(drop=True)
+        final_df = pd.concat([embedded_table, results_df[['match_value', 'new_code', 'sim_score']]], axis=1)
+        final_df['sim_score'] = 1 - final_df['sim_score']
+        return final_df
+
     
     def results_filter(self,match_response):
-        match_threshold = .93
+        match_threshold = .91
         filtered_df = match_response.loc[match_response.groupby("new_code")["sim_score"].idxmax()]
         thresh_filtered_df = filtered_df[filtered_df['sim_score'] > match_threshold]
         return thresh_filtered_df
     
 
     def column_picker(self,full_filt_db):
-        full_filt_db['return_col'] = full_filt_db['match_value'] + "-" + full_filt_db['new_code']
+        full_filt_db['return_col'] =   full_filt_db['new_code'] + " - " + full_filt_db['match_value']
         retDB = full_filt_db['return_col']
         #df_no_headers_index = retDB.to_string(header=False, index=False)
         return retDB
@@ -130,9 +153,8 @@ class llm_match():
 
 
         # Instantiate the ruleCreator with a prompt template that can be changed
-        prompt_template = '''You are a highly sophisticated medical coder. You are going to be given a symptom, a description of a symptom or medical term: '{input_text}', 
-        if it is not a symptom or a description of a symptom or a medical term return 'none'. If it is
-        create a comprehenseive list of ICD codes that reprsent the input and their relevant description.
+        prompt_template = '''You are a highly sophisticated medical professional.
+        Give me the ICD codes that if found in a medical authorization note would indicate the following : '{input_text}'
         There should be no headers, and the response should be in the structure: 
         
         B21 | HIV disease resulting in opportunistic infection. 
@@ -144,13 +166,15 @@ class llm_match():
 
         rc = llm_match(prompt_template=prompt_template)
         response1 = rc.query_openai(input_text)
-        print(response1)
+        #print(response1)
         if response1 != 'none':
             table_response = rc.data_table_creator(response1)
-            print(table_response)
+            #print(table_response)
             embedded_table = rc.process_table(table_response=table_response)
-            print(embedded_table)
-            match = rc.match_over_table(df = embedded_table)
+            #print(embedded_table)
+            #match = rc.match_over_table(df = embedded_table)
+            match = rc.match_over_table_bulk(embedded_table=embedded_table)
+            #print(match)
             fin = rc.column_picker(rc.results_filter(match))
 
             return fin
@@ -163,5 +187,4 @@ if __name__ == "__main__":
     input_text = input('enter:')
     match_inst = llm_match()
     match_response = match_inst.main(input_text)
-    fin = match_inst.results_filter(match_response)
-    print(fin)
+    #print(match_response)
