@@ -135,7 +135,7 @@ class llm_match():
 
     
     def results_filter(self,match_response):
-        match_threshold = .91
+        match_threshold = .93
         filtered_df = match_response.loc[match_response.groupby("new_code")["sim_score"].idxmax()]
         thresh_filtered_df = filtered_df[filtered_df['sim_score'] > match_threshold]
         return thresh_filtered_df
@@ -150,8 +150,6 @@ class llm_match():
 
 
     def main(self, input_text):
-
-
         # Instantiate the ruleCreator with a prompt template that can be changed
         prompt_template = '''You are a highly sophisticated medical professional.
         Give me the ICD codes that if found in a medical authorization note would indicate the following : '{input_text}'
