@@ -16,9 +16,9 @@ openai.api_key = OPENAI_API_KEY
 supabase: Client = create_client(supabase_url, supabase_key)
 
 # Configuration
-TABLE_NAME = "icd_codes"
-SOURCE_COLUMN = "code_description"
-EMBEDDINGS_COLUMN = "embeddings"
+TABLE_NAME = "cpt_codes"
+SOURCE_COLUMN = "cpt_description"
+EMBEDDINGS_COLUMN = "description_embedding"
 MODEL_NAME = "text-embedding-ada-002"
 BATCH_SIZE = 500  # Adjust as needed based on memory/latency constraints
 

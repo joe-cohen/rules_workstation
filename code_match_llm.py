@@ -32,7 +32,7 @@ class llm_match():
             response = openai.chat.completions.create(
                 model="gpt-4-turbo",  # Use "gpt-4" or "gpt-3.5-turbo"
                 messages=[
-                    {"role": "system", "content": "You are a helpful medical professional creating the most applicable phrases to help find the given indications as frequently as possible."},
+                    {"role": "system", "content": "You are a helpful medical professional."},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0,
@@ -93,33 +93,14 @@ class llm_match():
         )
         return table_response
     
-    # def similarity_search(self, query_embedding):
-    #     response = self.supabase_client.rpc("find_most_similar", {
-    #     "input_vector": query_embedding
-    #         }).execute()
 
-    #         # Process and return results
-    #     results = response.data
-    #     #return [{"match": result[match_column], "score": result["similarity"]} for result in results]
-    #     return results
-
-    # def match_over_table(self, df):
-     
-    #     df[['match_value', 'new_code','sim_score']] = df['embeddings'].apply(
-    #         lambda x: pd.Series(self.similarity_search(x)[0])
-    #     )
-    #     df['sim_score'] = 1 - df['sim_score']
-        return df
-
-    #need func that takes in embedded table and returns similarity search
-
-    def match_over_table_bulk(self,embedded_table):
+    def match_over_table_bulk(self,embedded_table, rpc_function):
         embedded_table['formatted_embeddings'] = embedded_table['embeddings'].apply(
         lambda e: "[" + ", ".join(f"{x}" for x in e) + "]"
     )
     
         embeddings_list = embedded_table['formatted_embeddings'].tolist()
-        response = self.supabase_client.rpc("find_most_similar_bulk", {
+        response = self.supabase_client.rpc(rpc_function, {
                         "input_vectors": embeddings_list
                     }).execute()
         results_df = pd.DataFrame(response.data)
@@ -135,7 +116,7 @@ class llm_match():
 
     
     def results_filter(self,match_response):
-        match_threshold = .93
+        match_threshold = .91
         filtered_df = match_response.loc[match_response.groupby("new_code")["sim_score"].idxmax()]
         thresh_filtered_df = filtered_df[filtered_df['sim_score'] > match_threshold]
         return thresh_filtered_df
@@ -149,31 +130,74 @@ class llm_match():
 
 
 
-    def main(self, input_text):
+    def icd_main(self, input_text):
         # Instantiate the ruleCreator with a prompt template that can be changed
-        prompt_template = '''You are a highly sophisticated medical professional.
-        Return the ICD codes that would represent the following : '{input_text}'
-        It should be focused on the input text and not take into account things out of the scope of the input text.
-        There should be no headers, and the response should be in the structure: 
-        
-        B21 | HIV disease resulting in opportunistic infection. 
-        
-        There should not be any other markings before or after the dataset and all should have the same form
-        
-        If there are not any matches do not return any or if the characters do not resemeble a good match return 'none'.
+        prompt_template = '''
+        Provide all relevant ICD codes for {input_text}.  
+
+        If no appropriate ICD codes exist or the information is not available, return 'none' without adding any explanation.  
+
+        Ensure the response is formatted as follows, with no headers or additional text:  
+
+        Code | Description  
+
+        For example:  
+        B21 | HIV disease resulting in opportunistic infection  
+        E11.9 | Type 2 diabetes mellitus without complications  
+        ...  
+
+        All ICD codes related to the condition must be included in this format. 
         '''
 
         rc = llm_match(prompt_template=prompt_template)
         response1 = rc.query_openai(input_text)
         print(response1)
-        if response1 != 'None' and response1 != 'none' :
+        if response1 != 'None' and response1 != 'none':
             table_response = rc.data_table_creator(response1)
             #print(table_response)
             embedded_table = rc.process_table(table_response=table_response)
             #print(embedded_table)
             #match = rc.match_over_table(df = embedded_table)
-            match = rc.match_over_table_bulk(embedded_table=embedded_table)
+            match = rc.match_over_table_bulk(embedded_table=embedded_table, rpc_function= "find_most_similar_bulk")
             #print(match)
+            fin = rc.column_picker(rc.results_filter(match))
+
+            return fin
+        else:
+            return 'No match'
+        
+
+    def cpt_main(self, input_text):
+        # Instantiate the ruleCreator with a prompt template that can be changed
+        prompt_template = '''
+        Provide all relevant CPT codes for {input_text}. 
+
+        If no appropriate CPT codes exist or the information is not available, return 'none' without adding any explanation.
+
+        Ensure the response is formatted as follows, with no headers or additional text:
+
+        Code | Description
+
+        For example:
+        61510 | Craniectomy or craniotomy for excision of brain tumor, supratentorial, except meningioma
+        61512 | Craniectomy or craniotomy for excision of meningioma, supratentorial
+        ...
+
+        All CPT codes related to the procedure must be included in this format.
+        
+        '''
+
+        rc = llm_match(prompt_template=prompt_template)
+        response1 = rc.query_openai(input_text)
+        print(response1)
+        if response1 != 'None' and response1 != 'none':
+            table_response = rc.data_table_creator(response1)
+            #print(table_response)
+            embedded_table = rc.process_table(table_response=table_response)
+            #print(embedded_table)
+            #match = rc.match_over_table(df = embedded_table)
+            match = rc.match_over_table_bulk(embedded_table=embedded_table, rpc_function= "find_most_similar_bulk_cpt")
+            print(match)
             fin = rc.column_picker(rc.results_filter(match))
 
             return fin
@@ -185,5 +209,5 @@ class llm_match():
 if __name__ == "__main__":
     input_text = input('enter:')
     match_inst = llm_match()
-    match_response = match_inst.main(input_text)
+    match_response = match_inst.cpt_main(input_text)
     #print(match_response)

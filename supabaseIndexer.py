@@ -29,9 +29,9 @@ try:
     
     # SQL query to create an index with a timeout
     create_index_query = """
-    CREATE INDEX IF NOT EXISTS icd_codes_embeddings_idx
-    ON icd_codes
-    USING hnsw (embeddings vector_cosine_ops)
+    CREATE INDEX IF NOT EXISTS cpt_codes_embeddings_idx
+    ON cpt_codes
+    USING hnsw (description_embedding vector_cosine_ops)
     WITH (m = 24, ef_construction = 200);
     """
     
