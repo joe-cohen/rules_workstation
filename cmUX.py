@@ -4,16 +4,35 @@ import pandas as pd
 import re
 
 # Define your function that processes the input
-def process_input(user_input: str) -> str:
+def process_input(user_input: str):
     match_inst = llm_match()
     cleaned_text = re.sub(r'[^a-zA-Z0-9\s]', '', user_input)
+    
+    # Select the appropriate generator function
     if st.session_state.search_type == "icd":
-        func_output = match_inst.icd_main(input_text = user_input)
+        generator = match_inst.icd_main(input_text=user_input)
     elif st.session_state.search_type == "cpt":
-        func_output = match_inst.cpt_main(input_text = user_input)
-    # Example function that just echoes the input with some modification
-    # Replace this with your actual logic
-    return func_output
+        generator = match_inst.cpt_main(input_text=user_input)
+    
+    # Stream output to the Streamlit UI
+    output_placeholder = st.empty()  # Create a placeholder for dynamic updates
+    full_output = ""  # Buffer to store the cumulative response
+
+    # Iterate over the generator to get chunks and update Streamlit dynamically
+    for chunk in generator:
+        full_output += chunk  # Append the new chunk to the full response
+        output_placeholder.text_area("Output", value=full_output, height=400)  # Update the placeholder dynamically
+
+    with st.spinner("Cross- referencing..."):
+        if st.session_state.search_type == "cpt":
+            filtered_response = match_inst.cpt_post_processing(full_output)
+        if st.session_state.search_type == "icd":
+            filtered_response = match_inst.icd_post_processing(full_output)
+            
+    clipboard_data = '\n'.join(str(item) for item in filtered_response)
+    output_placeholder.text_area("Output (Post-Processed)", value=clipboard_data, height=400)
+
+    return full_output
 
 st.title("cohere ICD code match")
 if "search_type" not in st.session_state:
@@ -31,20 +50,4 @@ with col2:
 if st.button("Run Code Match") and len(user_input)>=1:
     result = process_input(user_input)
     st.session_state["result"] = result
-
-# Display the output if available
-if "result" in st.session_state:
-    if type(st.session_state["result"]) == str:
-        st.text_area("Output", value='Not found', height = 300)
-
-    else:
-        data = st.session_state["result"].values.tolist()
-        
-        clipboard_data = '\n'.join(str(item) for item in data)
-        st.text_area("Output", value=clipboard_data, height = 300)
-
     
-
-    #st.markdown(copy_js, unsafe_allow_html=True)
-    # if st.button("Copy to Clipboard"):
-    #     pyperclip.copy(clipboard_data)

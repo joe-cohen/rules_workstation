@@ -20,30 +20,57 @@ class llm_match():
         self.prompt_template = prompt_template or "Given the following input: '{input_text}', generate a response."
         self.supabase_client = create_client(supabase_url, supabase_key)
         
-    def query_openai(self, input_text):
+    # def query_openai(self, input_text):
+    #     """
+    #     Uses OpenAI's Python SDK to query the GPT-4 model with a prompt template.
+    #     """
+    #     try:
+    #         # Create the prompt
+    #         prompt = self.prompt_template.format(input_text=input_text)
+            
+    #         # Call OpenAI's completion API
+    #         response = openai.chat.completions.create(
+    #             model="gpt-4-turbo",  # Use "gpt-4" or "gpt-3.5-turbo"
+    #             messages=[
+    #                 {"role": "system", "content": "You are a helpful medical professional."},
+    #                 {"role": "user", "content": prompt}
+    #             ],
+    #             temperature=0,
+    #             timeout= 60
+                
+    #         )
+    #         return response.choices[0].message.content
+        
+    #     except Exception as e:
+    #         print(f"Error querying OpenAI API: {e}")
+    #         return None
+
+    def query_openai_streaming(self,input_text: str):
         """
-        Uses OpenAI's Python SDK to query the GPT-4 model with a prompt template.
+        Streams GPT-4 output incrementally using OpenAI's Python SDK.
         """
         try:
-            # Create the prompt
+            # Prepare prompt
             prompt = self.prompt_template.format(input_text=input_text)
-            
-            # Call OpenAI's completion API
-            response = openai.chat.completions.create(
-                model="gpt-4-turbo",  # Use "gpt-4" or "gpt-3.5-turbo"
+            # Start streaming the OpenAI API response
+            response_stream = openai.chat.completions.create(
+                model="gpt-4-turbo",
                 messages=[
                     {"role": "system", "content": "You are a helpful medical professional."},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0,
-                timeout= 60
-                
+                stream=True  # Enable streaming
             )
-            return response.choices[0].message.content
-        
+
+            for chunk in response_stream:
+                if chunk.choices[0].delta.content:
+                    delta = chunk.choices[0].delta.content
+                    yield delta
+
         except Exception as e:
-            print(f"Error querying OpenAI API: {e}")
-            return None
+            yield f"Error: {str(e)}"
+
 
     def data_table_creator(self, response):
 
@@ -116,7 +143,7 @@ class llm_match():
 
     
     def results_filter(self,match_response):
-        match_threshold = .91
+        match_threshold = .93
         filtered_df = match_response.loc[match_response.groupby("new_code")["sim_score"].idxmax()]
         thresh_filtered_df = filtered_df[filtered_df['sim_score'] > match_threshold]
         return thresh_filtered_df
@@ -150,17 +177,23 @@ class llm_match():
         '''
 
         rc = llm_match(prompt_template=prompt_template)
-        response1 = rc.query_openai(input_text)
-        print(response1)
-        if response1 != 'None' and response1 != 'none':
-            table_response = rc.data_table_creator(response1)
+        response_text = ""  # Buffer to hold the streamed response
+        for chunk in rc.query_openai_streaming(input_text):
+            response_text += chunk
+            yield chunk # Print dynamically to see progress
+        return response_text
+
+    def icd_post_processing(self, ai_output):
+    
+        if ai_output != 'None' and ai_output != 'none':
+            table_response = self.data_table_creator(ai_output)
             #print(table_response)
-            embedded_table = rc.process_table(table_response=table_response)
+            embedded_table = self.process_table(table_response=table_response)
             #print(embedded_table)
             #match = rc.match_over_table(df = embedded_table)
-            match = rc.match_over_table_bulk(embedded_table=embedded_table, rpc_function= "find_most_similar_bulk")
+            match = self.match_over_table_bulk(embedded_table=embedded_table, rpc_function= "find_most_similar_bulk")
             #print(match)
-            fin = rc.column_picker(rc.results_filter(match))
+            fin = self.column_picker(self.results_filter(match))
 
             return fin
         else:
@@ -188,26 +221,30 @@ class llm_match():
         '''
 
         rc = llm_match(prompt_template=prompt_template)
-        response1 = rc.query_openai(input_text)
-        print(response1)
-        if response1 != 'None' and response1 != 'none':
-            table_response = rc.data_table_creator(response1)
-            #print(table_response)
-            embedded_table = rc.process_table(table_response=table_response)
-            #print(embedded_table)
-            #match = rc.match_over_table(df = embedded_table)
-            match = rc.match_over_table_bulk(embedded_table=embedded_table, rpc_function= "find_most_similar_bulk_cpt")
-            print(match)
-            fin = rc.column_picker(rc.results_filter(match))
+        response_text = ""  # Buffer to hold the streamed response
+        for chunk in rc.query_openai_streaming(input_text):
+            response_text += chunk
+            yield chunk # Print dynamically to see progress
+        return response_text
+
+    def cpt_post_processing(self, ai_output):
+    
+        if ai_output != 'None' and ai_output != 'none':
+            table_response = self.data_table_creator(ai_output)
+            embedded_table = self.process_table(table_response=table_response)
+            match = self.match_over_table_bulk(embedded_table=embedded_table, rpc_function= "find_most_similar_bulk_cpt")
+            #print(match)
+            fin = self.column_picker(self.results_filter(match))
+
 
             return fin
         else:
             return 'No match'
 
-
         
 if __name__ == "__main__":
     input_text = input('enter:')
     match_inst = llm_match()
-    match_response = match_inst.cpt_main(input_text)
+    match_response = match_inst.icd_main(input_text)
+    filtered_response = match_inst.icd_post_processing(ai_output = match_response)                                               
     #print(match_response)
