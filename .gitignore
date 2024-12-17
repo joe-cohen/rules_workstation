@@ -1,2 +1,2 @@
 .env
-googleSheetReader/google_secrets.json
+googleSheetReader/gsecrets.json

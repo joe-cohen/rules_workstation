@@ -12,7 +12,7 @@ import openpyxl
 SUPABASE_URL = os.getenv('SUPABASE_URL')
 SUPABASE_KEY = os.getenv('SUPABASE_KEY')  # Replace with your Supabase API key
 TABLE_NAME = "rules"  # Replace with your table name in Supabase
-SERVICE_ACCOUNT_FILE = "/Users/josephcohen/Documents/rules_workstation/googleSheetsReader/google_secrets.json"
+SERVICE_ACCOUNT_FILE = "/Users/josephcohen/Documents/rules_workstation/googleSheetsReader/gsecrets.json"
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1_j154XhDgS_i4dEcwMkx_J_x0MQYcU_Vtr4GxF6IhO4/edit?gid=820606572#gid=820606572"
 SHEET_NAME = "FOR REVIEW: Indication Defintion"
 API_KEY = os.getenv("GOOGEL_API_KEY")
