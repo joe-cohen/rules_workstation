@@ -15,7 +15,7 @@ TABLE_NAME = "rules"  # Replace with your table name in Supabase
 SERVICE_ACCOUNT_FILE = "/Users/josephcohen/Documents/rules_workstation/googleSheetsReader/rulesheetreader-975279076d7f.json"
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1_j154XhDgS_i4dEcwMkx_J_x0MQYcU_Vtr4GxF6IhO4/edit?gid=820606572#gid=820606572"
 SHEET_NAME = "FOR REVIEW: Indication Defintion"
-API_KEY = "AIzaSyCGz80ffkcpWiXra8vV3EWGOxV9mlFgV44"
+API_KEY = os.getenv("GOOGEL_API_KEY")
 
 # Google Sheets API Configuration
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
